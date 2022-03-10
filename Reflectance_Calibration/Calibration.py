@@ -4,15 +4,11 @@
 """
 
 import os, sys
-import glob
 import cv2
 import numpy as np
 import subprocess
 from Calibration_Utils import get_calibration_coefficients_from_target_image
-import math
 from ExifUtils import *
-import tifftools
-
 
 if sys.platform == "win32":
     si = subprocess.STARTUPINFO()
