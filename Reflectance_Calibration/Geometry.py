@@ -10,6 +10,7 @@ def distance(a, b):
 
 def slope(a, b):
     return (b[1] - a[1]) / (b[0] - a[0])
+    
 def hypotenuse(points):
     line1 = distance(points[0], points[1])
     line2 = distance(points[1], points[2])

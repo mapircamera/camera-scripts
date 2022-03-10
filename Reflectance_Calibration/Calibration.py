@@ -14,15 +14,18 @@ if sys.platform == "win32":
     si = subprocess.STARTUPINFO()
     si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
+#Apply calibration formula to pixel values
 def calibrate_channel(mult_values, value):
     slope = mult_values["slope"]
     intercept = mult_values["intercept"]
     return (slope * value) + intercept
 
+#Stretch image contrast to global calib max/min pixel values
 def contrast_stretch_channel(global_cal_max, global_cal_min, rangeMax, value):
     value = rangeMax * ((value - global_cal_min) / (global_cal_max - global_cal_min))    
     return value
 
+#Calibrate the dataset global min/max pixel values
 def calibrate_extrema(img):
     max_mins = {"redmaxs": [], "redmins": [], "greenmaxs": [], "greenmins": [], "bluemaxs": [], "bluemins": []}
 
@@ -47,6 +50,7 @@ def calibrate_extrema(img):
     extrema = {"calib": {"max": global_maxes, "min": global_mins}}
     return extrema 
 
+#Get pixel min/max for each image channel
 def get_channel_extrema_for_image(image):
     channels = [
         image[:, :, 0],
@@ -58,6 +62,7 @@ def get_channel_extrema_for_image(image):
     mins = list(map(np.min, channels))
     return maxes, mins
 
+#Get pixel min/max for entire input folder of images
 def get_channel_extrema_for_project(inFolder):
     max_int = sys.maxsize
     min_int = -max_int - 1
@@ -79,6 +84,7 @@ def get_channel_extrema_for_project(inFolder):
 
     return maxes, mins
 
+#Apply calibration formulas to input folder's global min/max
 def get_global_calib_extrema(calibration_values, global_max, global_min):
     global_cal_maxes = []
     global_cal_mins = []
@@ -100,19 +106,20 @@ def get_global_calib_extrema(calibration_values, global_max, global_min):
 
 def main():
     
+    #Read arguments from bat file
     if len(sys.argv) > 1:
          calib_photo = sys.argv[1]
          inFolder = sys.argv[2]
          outFolder = sys.argv[3]
 
-    print('\n(1/3) Computing Calibration Values')
+    print('\n(1/3) Computing Calibration Values') #Analyze photo of MAPIR Calibration Target V2
     calibration_values, FileType_calib = get_calibration_coefficients_from_target_image(calib_photo, inFolder)
 
-    print('\n(2/3) Analyzing Input Images')
+    print('\n(2/3) Analyzing Input Images') #Analyze input image folder
     maxes, mins  = get_channel_extrema_for_project(inFolder)
     global_cal_max, global_cal_min = get_global_calib_extrema(calibration_values, maxes, mins)
 
-    print('\n(3/3) Calibrating Images\n')
+    print('\n(3/3) Calibrating Images\n') #Apply calibration formula to input images
     
     for path, subdirs, files, in os.walk(inFolder):
         if files:

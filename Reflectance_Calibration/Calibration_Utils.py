@@ -17,10 +17,12 @@ from PIL import Image
 from ExifUtils import *
 from PIL.TiffTags import TAGS
 
+#Measurements (inches) for point to point real world distances between MAPIR Calibration Target V2 QR symbol (aruco) and reflectance target panel centers
 QR_CORNER_TO_CORNER = 5.5
 QR_CORNER_TO_TARG_1_3 = 9.0
 QR_CORNER_TO_TARG_2_4 = 10.5
 
+#Computed reflectance (percent) for Survey3 camera (filter) models
 refvalues = {
     "550/660/850": [[0.8689592421, 0.2656248359, 0.1961875592, 0.0195576511], [0.8775934407, 0.2661207692, 0.1987265874, 0.0192249327],
                     [0.8653063177, 0.2798126291, 0.2337498097, 0.0193295348]],
@@ -40,6 +42,7 @@ calibration_coefficients = {
     "mono":  {"slope": 0.00, "intercept": 0.00}
 }
 
+#Outputs modified calibration photo image showing pixels used in each reflectance panel for calibration values
 def print_center_targs(image, target1, target2, target3, target4, sample_diameter):
 
     image_line = image.split(".")[0] + "_circles." + image.lower().split(".")[1]
@@ -58,9 +61,11 @@ def print_center_targs(image, target1, target2, target3, target4, sample_diamete
 
     cv2.imwrite(image_line, line_image)
 
+#Checks whether the image is a 3 channel RGB
 def is_color_image(img):
     return len(img.shape) > 2
 
+#Converts calib photo to grayscale for easier QR detection
 def prep_target_image_for_detection(target_img):
     img = cv2.imread(target_img, 0)
 
@@ -68,6 +73,7 @@ def prep_target_image_for_detection(target_img):
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return img
 
+#Stretches the calib photo's contrast to improve detection
 def contrast_stretch(img, threshold):
     bit_depth = int(img.dtype.name[4:])
     pixel_range_max = 2**bit_depth-1
@@ -75,12 +81,14 @@ def contrast_stretch(img, threshold):
         pixel_row[pixel_row <= threshold] = 0 # Black
         pixel_row[pixel_row > threshold] = pixel_range_max # White
 
+#Stretches the calib photo's contrast to improve detection, using image's pixel range midpoint
 def midpoint_threshold_contrast_stretch(img):
     stretch_img = img.copy()
     threshold = (stretch_img.max() + 1 - stretch_img.min()) / 2 - 1
     contrast_stretch(stretch_img, threshold)
     return stretch_img
 
+#Stretches the calib photo's contrast to improve detection, using image's pixel range mode
 def mode_threshold_contrast_stretch(img):
     stretch_img = img.copy()
     threshold = stats.mode(stretch_img.flatten())[0][0]
@@ -90,16 +98,19 @@ def mode_threshold_contrast_stretch(img):
 def filter_detected_targets_by_id(corners, ids, target_id):
     return [i for i, j in zip(corners, ids) if j == target_id]
 
+#Gets the pixel locations of the QR pattern's corners in the calibration photo
 def get_image_corners(target_img_path):
     img = prep_target_image_for_detection(target_img_path)
     aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_4X4_250)
 
     corners, ids, _= aruco.detectMarkers(img, aruco_dict)
 
+    #If QR is not detected then contrast stetch around pixel range mode to improve detection
     if corners == []:
         mode_stretched = mode_threshold_contrast_stretch(img)
         corners, ids, _ = aruco.detectMarkers(mode_stretched, aruco_dict)
 
+    #If QR is not detected then contrast stetch around pixel range midpoint to improve detection
     if corners == []:
         mid_stretched = midpoint_threshold_contrast_stretch(img)
         corners, ids, _ = aruco.detectMarkers(mid_stretched, aruco_dict)
@@ -109,7 +120,6 @@ def get_image_corners(target_img_path):
 
     QR_matches = filter_detected_targets_by_id(corners, ids, 13)[0]
     single_QR = QR_matches[0]
-
 
     QR_corner_ints = [[int(corner[0]), int(corner[1])] for corner in single_QR]
 
@@ -125,6 +135,7 @@ def get_image_corners(target_img_path):
 def get_version_2_QR_corners(target_image_path):
     return get_image_corners(target_image_path)
 
+#Checks whether the 4 reflectance panels increase/decrease in reflectance as expected
 def check_exposure_quality(x, y):
     if (x[0] == 1 and x[-1] == 0):
         x = x[1:]
@@ -140,6 +151,7 @@ def check_exposure_quality(x, y):
 
     return x, y
 
+#If reflectnace is not sorted correctly then calibration photo is "bad", we suggest using a different one
 def bad_target_photo(channels):
     for channel in channels:
         if channel != sorted(channel, reverse=True):
@@ -151,6 +163,7 @@ def bad_target_photo(channels):
 
     return False
 
+#Calculates the linear regression between the points produced from known reflectance of panels versus calibration photo pixel values
 def get_line_of_best_fit(x, y):
     try:
         mean_x = np.mean(x)
@@ -168,6 +181,7 @@ def get_line_of_best_fit(x, y):
         print("Error: ", e)
         print("Line: " + str(exc_tb.tb_lineno))
 
+#Calculates the pixel locations for the target panel centers, taking QR rotation into account
 def get_target_center_from_QR_corner(qr_corner_to_target_in_pixels, dx, dy, QR_corner, angle):
 
     y_shift = int(qr_corner_to_target_in_pixels * math.sin(angle))
@@ -190,6 +204,7 @@ def get_target_center_from_QR_corner(qr_corner_to_target_in_pixels, dx, dy, QR_c
     
     return (int(target_x), int(target_y))    
 
+#Averages the pixel values for each panel's sampling area
 def get_reflectance_target_sample_pixels(image, target_center, target_sample_area_width_in_pixels):
     half_sample_width = target_sample_area_width_in_pixels / 2
 
@@ -198,6 +213,7 @@ def get_reflectance_target_sample_pixels(image, target_center, target_sample_are
         int(target_center[0] - half_sample_width):int(target_center[0] + half_sample_width)
     ]
 
+#Checks whether input contains RAW, TIFF or JPG image(s)
 def check_input_folder_structure(in_folder):
     infiles = []    
     infiles.extend(glob.glob(in_folder + os.sep + "*.[rR][aA][wW]"))
@@ -222,6 +238,7 @@ def check_input_folder_structure(in_folder):
 
     return infiles[0], FileType
 
+#Reads image metadata (exif) to determine camera's model and filter used
 def check_images_params(image_path, FileType):
     camera_model, camera_filter = 'CAMERA_MODEL', 'CAMERA_FILTER' 
     
@@ -246,7 +263,7 @@ def check_images_params(image_path, FileType):
 
     return camera_model, camera_filter 
 
-
+#Main function to produce calibration values from calibration photo
 def get_calibration_coefficients_from_target_image(target_image_path, in_folder):
     
     if target_image_path.lower().endswith(('jpg','jpeg')):
@@ -260,7 +277,6 @@ def get_calibration_coefficients_from_target_image(target_image_path, in_folder)
 
     img_folder, FileType_img  = check_input_folder_structure(in_folder)
     camera_model_img, camera_filter_img = check_images_params(img_folder, FileType_img)
-
 
     if camera_model_calib != camera_model_img or camera_filter_calib != camera_filter_img  or FileType_calib !=FileType_img :
         sys.exit("Calibration photo does not match input image (EXIF).")
