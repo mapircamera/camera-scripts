@@ -15,8 +15,6 @@ import exifread
 import warnings
 
 
-
-# Constants
 if sys.platform == "win32":
     si = subprocess.STARTUPINFO()
     si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
@@ -24,7 +22,6 @@ if sys.platform == "win32":
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 COLOR_CORRECTION_VECTORS = [1.398822546, -0.09047482163, 0.1619316638, -0.01290435996, 0.8994362354, 0.1134681329, 0.007306902204, -0.05995989591, 1.577814579]#101018
-
 
 MAKE = 'MAPIR'
 MODELS = ['Survey3W_RGB',
@@ -41,9 +38,6 @@ MODELS = ['Survey3W_RGB',
           'Survey3N_NIR'
           ]
     
-# This method converts Survey3 JPG or RAW and JPG images 
-# to Tiff images. Be sure to include the full file path
-# when specifying infolder and outfolder. 
 def Survey3_Convert_RAW_to_Tiff(infolder, outfolder, wb):
     
     # Creating the folder to store the processed photos
@@ -140,9 +134,7 @@ def Survey3_Convert_RAW_to_Tiff(infolder, outfolder, wb):
     else:
         sys.exit("No images to process")
     
-    print("Processing COMPLETE")
-
-#HELPER METHODS:    
+    print("Processing COMPLETE") 
     
 #returns all raw files in the current directory
 def get_raw_files_in_dir(dir_name):
@@ -169,7 +161,6 @@ def color_correction(color):
     color[:, :, 1] = (green_coeffs[0] * color[:, :, 0]) + (green_coeffs[1] * color[:, :, 1]) + (green_coeffs[2] * color[:, :, 2]) + goff
     color[:, :, 0] = (blue_coeffs[0] * color[:, :, 0]) + (blue_coeffs[1] * color[:, :, 1]) + (blue_coeffs[2] * color[:, :, 2]) + boff
 
-    #need to rescale not clip
     color[color > 1.0] = 1.0
     color[color < 0.0] = 0.0
 
@@ -209,7 +200,6 @@ def check_make_model(files, folder, raw_jpg=True):
     return filterVals   
 
 def main():
-    # Main function
     wb = False
     if len(sys.argv) > 1:
         if len(sys.argv) == 3:
@@ -231,6 +221,5 @@ def main():
     print()
     Survey3_Convert_RAW_to_Tiff(inf, outf, wb)
     
-
 if __name__ == "__main__":
     main()

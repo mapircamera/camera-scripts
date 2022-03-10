@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+"""
+@author: MAPIR, Inc
+"""
+
 import subprocess
 import os
 
