@@ -9,6 +9,7 @@ import cv2
 import subprocess
 import numpy as np
 import rasterio
+from ExifUtils import *
 
 
 if sys.platform == "win32":
@@ -115,7 +116,8 @@ def ApplyVig(infolder, infiles, ifTIFF, numFiles, outfolder, vigImg, dc):
                 color = color.astype("uint8") 
 
             #Save corrected img
-            cv2.imwrite(outputfilename, color)   
+            cv2.imwrite(outputfilename, color)
+            ExifUtils.copy_simple(inputfilename,outputfilename,si)   
                
             counter += 1
             
