@@ -8,7 +8,6 @@ import glob
 import cv2
 import subprocess
 import numpy as np
-import rasterio
 from ExifUtils import *
 
 
@@ -75,13 +74,10 @@ def ApplyVig(infolder, infiles, ifTIFF, numFiles, outfolder, vigImg, dc):
             r -= subMatrixR
             
             #Split vigImg into 3 channels
-            vigB = rasterio.open(vigImg[0])
-            vigG = rasterio.open(vigImg[1])
-            vigR = rasterio.open(vigImg[2])
             
-            vigB = vigB.read(1)
-            vigG = vigG.read(1)
-            vigR = vigR.read(1)
+            vigB = cv2.imread(vigImg[0],-1)
+            vigG = cv2.imread(vigImg[1],-1)
+            vigR = cv2.imread(vigImg[2],-1)
             
             #Apply flat field (vignette) correction by dividing vigImg and img per channel
 
@@ -165,7 +161,7 @@ def main():
     os.chdir(inV)
     vigImg = []
     vigImg.extend(get_tif_files_in_dir('.'))
-    vigImg.sort()  
+    vigImg.sort()  # [B,G,R] = [0,1,2]
     
     #Call main function to apply vignette correction
     ApplyVig(inf, infiles, ifTIFF, numFiles, outf, vigImg, dc)
