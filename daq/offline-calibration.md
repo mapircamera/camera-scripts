@@ -51,6 +51,9 @@ sensor 11-22-33-44-55 kind=daq-e
 | `--token TOKEN` | Control-channel auth token, if the unit has one set |
 | `--save-bundle PATH` | Also write the raw bundle JSON to disk |
 | `--require-profiles` | Fail if the device has no cap/geometry profiles |
+| `--save-profiles PATH` | Write the device's current profiles document (the cap curve it is applying) |
+| `--set-cap CAP_ID` | **Write** which cap this DAQ-E applies to its own calibrated stream (firmware 1.6.0+) |
+| `--cap-profile PATH` | The cap's correction curve, required by `--set-cap` for anything but `as_recorded` |
 
 ## Recording with calibration
 
@@ -61,15 +64,21 @@ python record_daq.py e --host 192.168.1.50 --calibrate csv
 
 | `--calibrate` | `.daq` contents | When to use |
 | --- | --- | --- |
-| `off` *(default)* | Raw counts | Chloros will calibrate at import |
-| `csv` | Raw counts, **plus** a calibrated `.csv` | **Recommended.** Usable numbers now, and the `.daq` stays reprocessable |
+| `off` *(default)* | Raw counts | **Recommended.** Chloros calibrates at import and writes the `.csv` for you |
+| `csv` | Raw counts, **plus** a calibrated `.csv` | You need numbers in the field, with no Chloros and no internet |
 | `bake` | Calibrated W/m²/nm, stamped with the bundle SHA | The recording must stand completely alone |
 
 {% hint style="warning" %}
-Prefer `csv` over `bake`. A raw `.daq` can be re-calibrated later if a
-coefficient revision lands; a baked one is frozen at whatever the bundle said
-the day you recorded.
+Prefer a raw `.daq` over `bake` in every case where you have a choice. A raw
+recording can be re-calibrated later if a coefficient revision lands; a baked one
+is frozen at whatever the bundle said the day you recorded, and no amount of
+reprocessing gets that back.
 {% endhint %}
+
+`csv` and `bake` both still import fine. Chloros reads a baked recording as-is
+rather than calibrating it twice, and re-exports it into `Light Sensor/`
+alongside everything else — so a baked file loses the ability to be
+*re-calibrated*, not the ability to be *used*.
 
 The CSV header carries provenance — sensor, bundle SHA, completion date, cap,
 dark model, and profile source — so the file stands alone. `--csv PATH` sets an
@@ -134,21 +143,25 @@ vectors.
 ## Caps
 
 A cosine corrector or FOV cone has its own per-wavelength correction, and even a
-**bare** DAQ-E has a geometry correction (the bare diffuser over-reads
-directional light ~2×, while a sunshine cap is near-ideal). None of that is in
-the calibration bundle — it lives in Chloros and is versioned separately.
+**bare** DAQ-E has a geometry correction. None of that is in the calibration
+bundle — it lives in Chloros, is versioned separately, and is pushed into the
+device's profile store where `daq_cal.py` reads it.
 
-So the cap is **not a device setting you can change from these scripts.** It is
-resolved by Chloros for the unit and pushed into the device's profile store,
-where `daq_cal.py` reads it.
+The full contract — who decides the cap, how the file records that, what each
+mode stamps, and how to write a cap onto a DAQ-E with `--set-cap` — has its own
+page:
+
+{% content-ref url="caps.md" %}
+[caps.md](caps.md)
+{% endcontent-ref %}
 
 | Situation | Result |
 | --- | --- |
 | Device carries the right profile | Correct output, matches Chloros exactly |
 | Device carries **no** profile | **Bare-uncorrected** — ~2× off bare, ~11× off under a sunshine cap |
-| Physical cap changed | Re-push from Chloros; the scripts cannot substitute another cap's curve |
+| Physical cap changed | Re-push from Chloros, or write it with `daq_cal.py --set-cap` |
 
-### `--cap-id` is an override, not a cap selector
+### `--cap-id` under `--calibrate` is an override, not a cap selector
 
 The device carries exactly **one** resolved profile, so the only accepted values
 are:
@@ -162,6 +175,10 @@ curve, and applying the stored one under another name would be silently wrong by
 the sunshine-vs-bare factor. The override is validated at startup, not
 mid-recording — failing there costs nothing; failing mid-recording loses the run.
 {% endhint %}
+
+On a **raw** recording (no `--calibrate`, and the only mode DAQ-U / DAQ-M have)
+`--cap-id` declares rather than applies, and any id Chloros knows for that device
+kind is accepted.
 
 ### `--require-profiles`
 
@@ -179,5 +196,16 @@ stderr that the output is bare-uncorrected.
 Profiles are firmware **v1.6.0+**. Older firmware answers `get_profiles` with an
 unknown-command error, which is not a failure — it just means bare-uncorrected
 output, the same as every pre-v1.6.0 recording. Connect the unit to Chloros once
-to push profiles.
+to push profiles, or write one directly with `daq_cal.py --set-cap`.
 {% endhint %}
+
+## If you have Chloros, you do not need this
+
+The offline route exists for air-gapped work, and it is DAQ-E only — the bundle
+has to be on the device. Importing a raw `.daq` produces the same calibrated
+`.csv` for **any** DAQ model, including DAQ-U and DAQ-M, which have no onboard
+bundle to read:
+
+{% content-ref url="light-sensor-only.md" %}
+[light-sensor-only.md](light-sensor-only.md)
+{% endcontent-ref %}

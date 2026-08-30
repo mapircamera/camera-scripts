@@ -41,7 +41,14 @@ upward-facing (downwelling) and run it for the whole flight.
 | `--frames N` | Stop after N readings | until `Ctrl-C` |
 | `--duration S` | Stop after S seconds | until `Ctrl-C` |
 | `--output PATH` | Output `.daq` path | `<kind>_<timestamp>.daq` |
+| `--csv [PATH]` | Also write a CSV of what this run records | off |
 | `--device-name NAME` | Free-text label stored in the file | empty |
+| `--cap-id ID` | Which cap is fitted — see [Caps](caps.md) | the cap this model ships wearing |
+
+Bare `--csv` puts the file beside the `.daq`; give a `PATH` to place it. Without
+`--calibrate` it holds the same **raw counts** that go into the `.daq`, which is
+the only CSV a DAQ-U or DAQ-M can produce — neither carries a bundle to
+calibrate against locally.
 
 Transport-specific:
 
@@ -54,9 +61,10 @@ Transport-specific:
 | `--control-port` | DAQ-E | JSON control TCP port | `5001` |
 | `--token` | DAQ-E | Control-channel auth token | empty |
 
-Calibration options (`--calibrate`, `--csv`, `--cap-id`, `--require-profiles`)
-are DAQ-E only and covered in
-[Offline Calibration](offline-calibration.md).
+`--calibrate` and `--require-profiles` are DAQ-E only and covered in
+[Offline Calibration](offline-calibration.md). `--cap-id` applies to every model
+— on a raw recording it *declares* what is fitted rather than applying anything,
+which is what [Caps](caps.md) is about.
 
 {% hint style="warning" %}
 A DAQ-E with a token provisioned (done at the calibration station) refuses every
@@ -70,10 +78,19 @@ on unprovisioned units.
 ```
 Connecting to daq-e ...
   serial (cal key): 11-22-33-44-55   fw: 1.7.0
+  cap declared:     sunshine_cosine  (assumed -- fleet default; pass --cap-id if wrong)
 Recording RAW to: /data/daq-e_20260816_142233.daq
   (Chloros will fetch this sensor's calibration by serial at import)
   Ctrl-C to stop.
 ```
+
+The cap line is printed on **every** run, and the file records whether it was
+assumed or stated. Getting it wrong is a 20–30× error that nothing downstream
+can detect, so it is worth a glance:
+
+{% content-ref url="caps.md" %}
+[caps.md](caps.md)
+{% endcontent-ref %}
 
 The serial number is read from the device itself:
 
@@ -111,6 +128,16 @@ stamps on the LATTICE side.
 
 {% content-ref url="daq-file-format.md" %}
 [daq-file-format.md](daq-file-format.md)
+{% endcontent-ref %}
+
+## Getting the calibrated numbers back
+
+The `.daq` this script writes is raw by design. Importing it into Chloros writes
+the calibrated spectra back out as a `.daq` **and** a `.csv` — no camera and no
+imagery required:
+
+{% content-ref url="light-sensor-only.md" %}
+[light-sensor-only.md](light-sensor-only.md)
 {% endcontent-ref %}
 
 ## Stopping

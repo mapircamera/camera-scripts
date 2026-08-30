@@ -26,14 +26,19 @@ processes it later**. The scripts apply *no* processing and *no* calibration.
 They stamp each file with the device's **serial number and model**, and on
 import Chloros fetches that exact device's factory calibration from the cloud
 and applies it. Capture is yours; the science is handled at import.
+
+And Chloros **hands the result back**: every `.daq` you import is written out
+again, calibrated, as a `.daq` *and* a `.csv` of spectral irradiance — for
+**DAQ-U, DAQ-M and DAQ-E alike**, with no camera involved. See
+[Light Sensor Only](daq/light-sensor-only.md).
 {% endhint %}
 
 | Script | Purpose |
 | --- | --- |
 | `capture_lattice.py` | Control + raw capture from **LATTICE cameras** (M3C/M3M), with hardware-cable multi-camera sync |
 | `record_daq.py` | Record raw spectra from a **DAQ-U / DAQ-M / DAQ-E** to a Chloros-compatible `.daq` |
-| `daq_stream.py` | Listen to any number of DAQ-E sensors over multicast (raw or calibrated) |
-| `daq_cal.py` | Apply a **DAQ-E**'s onboard factory calibration offline — no cloud, no Chloros |
+| `daq_stream.py` | Listen to any number of **DAQ-E / DAQ-E-S** sensors over multicast — raw, calibrated, or attitude — and record what arrives |
+| `daq_cal.py` | Read or write a **DAQ-E**'s onboard factory calibration and cap profile — no cloud, no Chloros |
 | `mapir_metadata.py` | The Chloros ingest contract: writes raw LATTICE TIFFs + the `.daq` SQLite format |
 | `selftest.py` | Self-contained checks that the output matches what Chloros reads on import |
 
