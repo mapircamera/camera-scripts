@@ -23,7 +23,6 @@
 * [Recording a Flight](daq/recording-a-flight.md)
 * [Caps & Cap Provenance](daq/caps.md)
 * [Multi-Sensor Streaming](daq/multi-sensor-streaming.md)
-* [Attitude (IMU)](daq/attitude-imu.md)
 * [Offline Calibration](daq/offline-calibration.md)
 * [Light Sensor Only](daq/light-sensor-only.md)
 * [The .daq File Format](daq/daq-file-format.md)

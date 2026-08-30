@@ -17,26 +17,19 @@ the calibration bundle — it lives in Chloros and is versioned separately.
 On DAQ-U / DAQ-M / DAQ-E the sunshine corrector is **removable**, and nothing on
 the sensor can sense whether it is fitted — so somebody has to say.
 
-`record_daq.py` assumes `sunshine_cosine`, because that is how the large
-majority of units fly and it is the same assumption Chloros's own recorder
-makes. A **DAQ-E-S** gets `as_recorded` instead, and that one is not an
-assumption.
+`record_daq.py` assumes `sunshine_cosine` on DAQ-U, DAQ-M and DAQ-E, because
+that is how the large majority of units fly and it is the same assumption
+Chloros's own recorder makes. An assumption is fine; an assumption that cannot
+be recognised later is not.
 
-| Model | Default `cap_id` | Why |
-| --- | --- | --- |
-| DAQ-U | `sunshine_cosine` | Removable cap, fleet default |
-| DAQ-M | `sunshine_cosine` | Removable cap, fleet default |
-| DAQ-E | `sunshine_cosine` | Removable cap, fleet default |
-| DAQ-E-S | `as_recorded` | Permanent diffuser — settled by the hardware |
-
-The file records **which of those it was**, in `als_meta.cap_id_source`:
+So the file records **who decided the cap**, in `als_meta.cap_id_source`:
 
 | Value | Meaning |
 | --- | --- |
 | `auto_default` | **Assumed** — nobody said, so the fleet default was used |
 | `operator` | You stated it with `--cap-id` |
 | `device` | Read back from the unit's own profile store |
-| `model` | Settled by the hardware (DAQ-E-S) |
+| `model` | Settled by the hardware — optics that are not removable leave no choice to make |
 
 {% hint style="info" %}
 That distinction is what makes an assumed cap **undoable**. Chloros warns on
@@ -63,21 +56,6 @@ correction, and nothing downstream can detect it:
 
 `record_daq.py` prints the cap it declared on every run, and warns when that is
 `none`.
-
-## The DAQ-E-S exception
-
-None of the above applies to a **DAQ-E-S** — the one model whose diffuser really
-is permanent. It was on the unit when its factory bundle was measured, so the
-correction is already inside the gain. Chloros resolves that unit to
-`as_recorded` (no per-wavelength profile of any kind) and **overrides** any cap
-you ask for, because there is no cap choice to respect on optics that do not
-come off.
-
-{% hint style="danger" %}
-Putting `sunshine_cosine` on top of a DAQ-E-S double-counts the diffuser:
-measured at ~11×, which integrates to 6× the solar constant above the
-atmosphere — physically impossible, and the tell that it has happened.
-{% endhint %}
 
 ## `--cap-id` means two different things
 
@@ -152,7 +130,6 @@ capped twice:
 | Run | `calibration_applied` | `cap_id` | `cap_applied` | Chloros applies |
 | --- | :---: | --- | :---: | --- |
 | `record_daq.py u/m/e` (default) | `0` | `sunshine_cosine` | `0` | Bundle **+** that cap |
-| …on a DAQ-E-S | `0` | `as_recorded` | `0` | Bundle only, no profile |
 | …`--cap-id none` (stripped) | `0` | `none` | `0` | Bundle **+** bare geometry (DAQ-E) or nothing (U/M) |
 | `--calibrate csv` | `0` | The device's cap | `0` | Bundle + that cap — and the sibling `.csv` already has both |
 | `--calibrate bake` | `1` | The device's cap | `1` | **Nothing** — imported as-is |

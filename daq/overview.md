@@ -18,18 +18,14 @@ all three transports:
 | **DAQ-U** | USB serial | `pyserial` |
 | **DAQ-M** | Bluetooth LE (Nordic UART Service) | `bleak` |
 | **DAQ-E** | Ethernet (JSON control + raw TCP + multicast) | none — standard library |
-| **DAQ-E-S** | Ethernet, as above | none — standard library |
 
-A **DAQ-E-S** is a DAQ-E with a permanently bonded diffuser and an
-accelerometer. It behaves as a DAQ-E everywhere except caps, where the fixed
-optics settle the answer — see [Caps](caps.md).
 
 ## The scripts
 
 | Script | Purpose |
 | --- | --- |
 | [`record_daq.py`](recording-a-flight.md) | Record raw spectra from a DAQ-U / DAQ-M / DAQ-E to a Chloros-compatible `.daq` |
-| [`daq_stream.py`](multi-sensor-streaming.md) | Listen to any number of DAQ-E / DAQ-E-S sensors over multicast — raw, calibrated, or [attitude](attitude-imu.md) — and record what arrives |
+| [`daq_stream.py`](multi-sensor-streaming.md) | Listen to any number of DAQ-E sensors over multicast, raw or calibrated, and record what arrives |
 | [`daq_cal.py`](offline-calibration.md) | Read or write a DAQ-E's onboard calibration and [cap profile](caps.md) — no cloud, no Chloros |
 | [`mapir_metadata.py`](daq-file-format.md) | `DaqWriter` — the `.daq` SQLite format Chloros imports |
 
@@ -59,8 +55,7 @@ carries coefficients). Older firmware emits raw only.
 | --- | --- | --- | --- |
 | Raw, unicast | TCP `5000` | Raw counts, **one client at a time** | `record_daq.py` |
 | Raw, multicast | UDP `239.10.10.10:5002` | Raw counts, any number of listeners | `daq_stream.py` |
-| Calibrated, multicast | UDP `239.10.10.11:5003` | W/m²/nm, when the device carries coefficients (a DAQ-E-S always does) | `daq_stream.py --calibrated` |
-| Attitude, multicast | UDP `239.10.10.12:5004` | Attitude at the accelerometer's own rate, independent of spectra (firmware 1.12+) | `daq_stream.py --imu` |
+| Calibrated, multicast | UDP `239.10.10.11:5003` | W/m²/nm, when the device carries coefficients | `daq_stream.py --calibrated` |
 | Control | TCP `5001` | JSON: config, status, bundle / profile / cert | `daq_cal.py` |
 
 {% hint style="info" %}

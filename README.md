@@ -37,7 +37,7 @@ again, calibrated, as a `.daq` *and* a `.csv` of spectral irradiance — for
 | --- | --- |
 | `capture_lattice.py` | Control + raw capture from **LATTICE cameras** (M3C/M3M), with hardware-cable multi-camera sync |
 | `record_daq.py` | Record raw spectra from a **DAQ-U / DAQ-M / DAQ-E** to a Chloros-compatible `.daq` |
-| `daq_stream.py` | Listen to any number of **DAQ-E / DAQ-E-S** sensors over multicast — raw, calibrated, or attitude — and record what arrives |
+| `daq_stream.py` | Listen to any number of **DAQ-E** sensors over multicast (raw or calibrated), and record what arrives |
 | `daq_cal.py` | Read or write a **DAQ-E**'s onboard factory calibration and cap profile — no cloud, no Chloros |
 | `mapir_metadata.py` | The Chloros ingest contract: writes raw LATTICE TIFFs + the `.daq` SQLite format |
 | `selftest.py` | Self-contained checks that the output matches what Chloros reads on import |

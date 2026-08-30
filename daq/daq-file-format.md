@@ -15,7 +15,7 @@ the Chloros ingest contract.
 | Column | Value written |
 | --- | --- |
 | `version` | `1.27` — the schema number, matching the MAPIR hub's |
-| `product_model` | `daq-u` / `daq-m` / `daq-e` / `daq-e-s` — the device kind |
+| `product_model` | `daq-u` / `daq-m` / `daq-e` — the device kind |
 | `product_serial` | **The calibration fetch key.** Read from the sensor |
 | `device_name` | Free-text label (optional) |
 | `calibration_applied` | `0` for raw (default), `1` when values are already calibrated |
@@ -50,34 +50,22 @@ reprocessed.
 | `id` | Autoincrement primary key |
 | `created_on` | Row insert time, SQLite default |
 | `precise_timestamp` | **Absolute** wall-clock nanoseconds since the Unix epoch |
-| `event_type` | `3` for a spectrum reading, `4` for an attitude sample |
-| `spectral_data` | The spectrum BLOB (see below); `NULL` on an attitude row |
+| `event_type` | `3` for a spectrum reading |
+| `spectral_data` | The spectrum BLOB (see below) |
 | `is_saturated` | `0` / `1` |
 | `integration_time` | Integration time for **this** frame, in ms |
 | `device_ts_ns`, `device_ts_ptp` | The device's own latched timestamp, and whether it was PTP-disciplined |
-| `imu_trailer_version`, `imu_flags`, `imu_cal_applied`, `imu_sample_age_ms` | Attitude provenance |
-| `imu_x_mg`, `imu_y_mg`, `imu_z_mg`, `imu_mag_mg` | Acceleration vector and magnitude |
-| `imu_tilt_deg`, `imu_roll_deg`, `imu_pitch_deg`, `imu_temp_raw` | Angles and die temperature |
 
 The full schema matches the MAPIR recorder. A DIY raw recorder fills only
 `event_type` / `precise_timestamp` / `spectral_data` / `is_saturated` /
 `integration_time`; the photometric columns stay `NULL` — Chloros recomputes them
 from the calibrated spectrum at import.
 
-The `imu_*` columns are provenance, filled from the per-frame attitude trailer
-when a DAQ-E-S sends one. Chloros's import path does not currently **read** them;
-its own recorder writes them, and so do these scripts.
-
 {% hint style="info" %}
-A `.daq` is a multi-kind log, not a spectrum table. `event_type = 4` rows carry
-attitude and no spectrum, written by `daq_stream.py --imu`. Every Chloros
-spectral reader is inert to them — `mip/daq_dls` predicates on `event_type = 3
-AND spectral_data IS NOT NULL`, and `mip/als.py` skips rows whose blob will not
-decode.
-
-{% content-ref url="attitude-imu.md" %}
-[attitude-imu.md](attitude-imu.md)
-{% endcontent-ref %}
+A `.daq` is a log, not a spectrum table: Chloros's readers select spectra
+explicitly — `mip/daq_dls` predicates on `event_type = 3 AND spectral_data IS NOT
+NULL`, and `mip/als.py` skips rows whose blob will not decode — so a row that is
+not a spectrum reading is inert to all of them.
 {% endhint %}
 
 ### The spectrum BLOB
